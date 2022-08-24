@@ -34,13 +34,17 @@
             this.ChooseTargetBtn = new System.Windows.Forms.Button();
             this.ExportBtn = new System.Windows.Forms.Button();
             this.IsCopyResCheckBox = new System.Windows.Forms.CheckBox();
+            this.PandocTxtBox = new System.Windows.Forms.TextBox();
+            this.ChoosePandocBtn = new System.Windows.Forms.Button();
+            this.CSSTxtBox = new System.Windows.Forms.TextBox();
+            this.ChooseCssBtn = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // ChooseOriginBtn
             // 
-            this.ChooseOriginBtn.Location = new System.Drawing.Point(438, 25);
+            this.ChooseOriginBtn.Location = new System.Drawing.Point(381, 12);
             this.ChooseOriginBtn.Name = "ChooseOriginBtn";
-            this.ChooseOriginBtn.Size = new System.Drawing.Size(86, 32);
+            this.ChooseOriginBtn.Size = new System.Drawing.Size(111, 32);
             this.ChooseOriginBtn.TabIndex = 0;
             this.ChooseOriginBtn.Text = "源文件夹";
             this.ChooseOriginBtn.UseVisualStyleBackColor = true;
@@ -48,7 +52,7 @@
             // 
             // OriginFolderTxtBox
             // 
-            this.OriginFolderTxtBox.Location = new System.Drawing.Point(74, 30);
+            this.OriginFolderTxtBox.Location = new System.Drawing.Point(17, 17);
             this.OriginFolderTxtBox.Name = "OriginFolderTxtBox";
             this.OriginFolderTxtBox.ReadOnly = true;
             this.OriginFolderTxtBox.Size = new System.Drawing.Size(337, 23);
@@ -56,7 +60,7 @@
             // 
             // TargetFolderTxtBox
             // 
-            this.TargetFolderTxtBox.Location = new System.Drawing.Point(74, 80);
+            this.TargetFolderTxtBox.Location = new System.Drawing.Point(17, 67);
             this.TargetFolderTxtBox.Name = "TargetFolderTxtBox";
             this.TargetFolderTxtBox.ReadOnly = true;
             this.TargetFolderTxtBox.Size = new System.Drawing.Size(337, 23);
@@ -64,9 +68,9 @@
             // 
             // ChooseTargetBtn
             // 
-            this.ChooseTargetBtn.Location = new System.Drawing.Point(438, 75);
+            this.ChooseTargetBtn.Location = new System.Drawing.Point(381, 62);
             this.ChooseTargetBtn.Name = "ChooseTargetBtn";
-            this.ChooseTargetBtn.Size = new System.Drawing.Size(86, 32);
+            this.ChooseTargetBtn.Size = new System.Drawing.Size(111, 32);
             this.ChooseTargetBtn.TabIndex = 2;
             this.ChooseTargetBtn.Text = "目标文件夹";
             this.ChooseTargetBtn.UseVisualStyleBackColor = true;
@@ -74,9 +78,9 @@
             // 
             // ExportBtn
             // 
-            this.ExportBtn.Location = new System.Drawing.Point(74, 158);
+            this.ExportBtn.Location = new System.Drawing.Point(17, 229);
             this.ExportBtn.Name = "ExportBtn";
-            this.ExportBtn.Size = new System.Drawing.Size(450, 60);
+            this.ExportBtn.Size = new System.Drawing.Size(475, 60);
             this.ExportBtn.TabIndex = 4;
             this.ExportBtn.Text = "导出";
             this.ExportBtn.UseVisualStyleBackColor = true;
@@ -85,18 +89,59 @@
             // IsCopyResCheckBox
             // 
             this.IsCopyResCheckBox.AutoSize = true;
-            this.IsCopyResCheckBox.Location = new System.Drawing.Point(392, 122);
+            this.IsCopyResCheckBox.Location = new System.Drawing.Point(360, 202);
             this.IsCopyResCheckBox.Name = "IsCopyResCheckBox";
             this.IsCopyResCheckBox.Size = new System.Drawing.Size(132, 21);
             this.IsCopyResCheckBox.TabIndex = 5;
             this.IsCopyResCheckBox.Text = "是否复制Res文件夹";
             this.IsCopyResCheckBox.UseVisualStyleBackColor = true;
+            this.IsCopyResCheckBox.CheckedChanged += new System.EventHandler(this.IsCopyResCheckBox_CheckedChanged);
+            // 
+            // PandocTxtBox
+            // 
+            this.PandocTxtBox.Location = new System.Drawing.Point(17, 118);
+            this.PandocTxtBox.Name = "PandocTxtBox";
+            this.PandocTxtBox.ReadOnly = true;
+            this.PandocTxtBox.Size = new System.Drawing.Size(337, 23);
+            this.PandocTxtBox.TabIndex = 7;
+            // 
+            // ChoosePandocBtn
+            // 
+            this.ChoosePandocBtn.Location = new System.Drawing.Point(381, 113);
+            this.ChoosePandocBtn.Name = "ChoosePandocBtn";
+            this.ChoosePandocBtn.Size = new System.Drawing.Size(111, 32);
+            this.ChoosePandocBtn.TabIndex = 6;
+            this.ChoosePandocBtn.Text = "选择Pandoc文件";
+            this.ChoosePandocBtn.UseVisualStyleBackColor = true;
+            this.ChoosePandocBtn.Click += new System.EventHandler(this.ChoosePandocBtn_Click);
+            // 
+            // CSSTxtBox
+            // 
+            this.CSSTxtBox.Location = new System.Drawing.Point(17, 169);
+            this.CSSTxtBox.Name = "CSSTxtBox";
+            this.CSSTxtBox.ReadOnly = true;
+            this.CSSTxtBox.Size = new System.Drawing.Size(337, 23);
+            this.CSSTxtBox.TabIndex = 9;
+            // 
+            // ChooseCssBtn
+            // 
+            this.ChooseCssBtn.Location = new System.Drawing.Point(381, 164);
+            this.ChooseCssBtn.Name = "ChooseCssBtn";
+            this.ChooseCssBtn.Size = new System.Drawing.Size(111, 32);
+            this.ChooseCssBtn.TabIndex = 8;
+            this.ChooseCssBtn.Text = "选择CSS文件";
+            this.ChooseCssBtn.UseVisualStyleBackColor = true;
+            this.ChooseCssBtn.Click += new System.EventHandler(this.ChooseCssBtn_Click);
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 17F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(600, 230);
+            this.ClientSize = new System.Drawing.Size(510, 310);
+            this.Controls.Add(this.CSSTxtBox);
+            this.Controls.Add(this.ChooseCssBtn);
+            this.Controls.Add(this.PandocTxtBox);
+            this.Controls.Add(this.ChoosePandocBtn);
             this.Controls.Add(this.IsCopyResCheckBox);
             this.Controls.Add(this.ExportBtn);
             this.Controls.Add(this.TargetFolderTxtBox);
@@ -118,5 +163,9 @@
         private Button ChooseTargetBtn;
         private Button ExportBtn;
         private CheckBox IsCopyResCheckBox;
+        private TextBox PandocTxtBox;
+        private Button ChoosePandocBtn;
+        private TextBox CSSTxtBox;
+        private Button ChooseCssBtn;
     }
 }

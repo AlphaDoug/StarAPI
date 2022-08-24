@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Text.RegularExpressions;
+using IniTest.Utils;
 
 namespace StarApiTool
 {        // 创建文件的方式
@@ -9,17 +10,27 @@ namespace StarApiTool
         NewName,
         DoNothing,
     }
+    
     public partial class MainForm : Form
     {
         private string fromPath = string.Empty;
         private string toPath = string.Empty;
+        private string pandocPath = string.Empty;
+        private string cssPath = string.Empty;
+        private bool copyRes = false;
 
+        private string INI_PATH             = Directory.GetCurrentDirectory() + "\\config.ini";
+        private const string INI_FROMPATH   = "INI_FROMPATH";
+        private const string INI_TOPATH     = "INI_TOPATH";
+        private const string INI_PANDOCPATH = "INI_PANDOCPATH";
+        private const string INI_CSSPATH    = "INI_CSSPATH";
+        private const string INI_COPYRES    = "INI_COPYRES";
+
+        private const string INI_SECTION    = "DEFAULT";
         public MainForm()
         {
             InitializeComponent();
-#if DEBUG
-            Environment.CurrentDirectory = Directory.GetCurrentDirectory() + "\\..\\..\\..\\";
-#endif
+            LoadConfig();
 
         }
 
@@ -43,9 +54,7 @@ namespace StarApiTool
 
         private void ExportBtn_Click(object sender, EventArgs e)
         {
-            //ConvertMD2Html(@"C:\Users\shang.ma\Documents\StarApi\UBaseInventoryComponent\UBaseInventoryComponent.md",
-            //  @"C:\Users\shang.ma\Documents\StarApi\UBaseInventoryComponent\UBaseInventoryComponentAUTO.html");
-
+            SaveConfig();
             if (fromPath == string.Empty || toPath == string.Empty)
             {
                 MessageBox.Show("请选择文件夹");
@@ -67,7 +76,7 @@ namespace StarApiTool
                     ConvertMD2Html(path, to);
                 }
             }
-            if (IsCopyResCheckBox.Checked)
+            if (copyRes)
             {
                 //导出Res文件夹
                 CopyFileAndDir(fromPath + @"\Resources", toPath + @"\Resources");
@@ -83,8 +92,8 @@ namespace StarApiTool
                 //File.Create(toPath);
             }
             Console.WriteLine(fromPath + toPath);
-            string s = string.Format(@"--standalone --self-contained --css github.css {0} --output {1}", fromPath, toPath);
-            StartProcess(@"pandoc.exe", s);
+            string s = string.Format(@"--standalone --self-contained --css {0} {1} --output {2}", cssPath, fromPath, toPath);
+            StartProcess(pandocPath, s);
             ReplaceHtml(toPath);
             return;
         }
@@ -306,6 +315,64 @@ namespace StarApiTool
             }
         }
 
+        private void ChoosePandocBtn_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog dialog = new OpenFileDialog();
+            dialog.Multiselect = false;//该值确定是否可以选择多个文件
+            dialog.Title = "请选择文件";
+            dialog.Filter = "可执行文件|pandoc.exe";
+            if (dialog.ShowDialog() == DialogResult.OK)
+            {
+                pandocPath = dialog.FileName;
+                PandocTxtBox.Text = dialog.FileName;
+            }
+        }
+
+        private void ChooseCssBtn_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog dialog = new OpenFileDialog();
+            dialog.Multiselect = false;//该值确定是否可以选择多个文件
+            dialog.Title = "请选择文件";
+            dialog.Filter = "CSS文件|*.css";
+            if (dialog.ShowDialog() == DialogResult.OK)
+            {
+                cssPath = dialog.FileName;
+                CSSTxtBox.Text = dialog.FileName;
+            }
+        }
+
+        private void SaveConfig()
+        {
+            IniHelper.Write(INI_SECTION, INI_FROMPATH, fromPath, INI_PATH);
+            IniHelper.Write(INI_SECTION, INI_TOPATH, toPath, INI_PATH);
+            IniHelper.Write(INI_SECTION, INI_CSSPATH, cssPath, INI_PATH);
+            IniHelper.Write(INI_SECTION, INI_PANDOCPATH, pandocPath, INI_PATH);
+            IniHelper.Write(INI_SECTION, INI_COPYRES, copyRes.ToString(), INI_PATH);
+        }
+
+        private void LoadConfig()
+        {
+            if (!File.Exists(INI_PATH))
+            {
+                File.Create(INI_PATH);
+            }
+            fromPath = IniHelper.Read(INI_SECTION, INI_FROMPATH, "", INI_PATH);
+            toPath = IniHelper.Read(INI_SECTION, INI_TOPATH, "", INI_PATH);
+            pandocPath = IniHelper.Read(INI_SECTION, INI_PANDOCPATH, "", INI_PATH);
+            cssPath = IniHelper.Read(INI_SECTION, INI_CSSPATH, "", INI_PATH);
+            copyRes = bool.Parse(IniHelper.Read(INI_SECTION, INI_COPYRES, "False", INI_PATH));
+
+            OriginFolderTxtBox.Text = fromPath;
+            TargetFolderTxtBox.Text = toPath;
+            PandocTxtBox.Text = pandocPath;
+            CSSTxtBox.Text = cssPath;
+            IsCopyResCheckBox.Checked = copyRes;
+        }
+
+        private void IsCopyResCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            copyRes = IsCopyResCheckBox.Checked;
+        }
     }
 
 
