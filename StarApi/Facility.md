@@ -33,7 +33,8 @@
 
 视频测试
 
-<iframe height=498 width=510 src="Resources/录制_2022_08_05_17_09_20_803.mp4">
+<iframe height=498 width=510 src="Resources/录制_2022_06_05_23_47_49_919.mp4">
+
 
 ## 3.交互接口包含的方法
 
@@ -46,6 +47,14 @@
 ​	右键单击特定的方法可以对接口进行实现（implenment event），没有在蓝图中实现的接口会按默认的方式执行。
 
 ### 3.2 交互接口方法的种类
+
+| 返回值 | 函数名称           | 简介                         |
+| -----: | ------------------ | :--------------------------- |
+|   void | GetNameBoard       | 获取姓名版信息。             |
+|        | GetInteractInfo    | 获取交互信息。               |
+|        | GetInteractionType | 点击交互后获取到的可交互选项 |
+|        | OnInteract         |                              |
+|        |                    |                              |
 
 - GetNameBoard
 
