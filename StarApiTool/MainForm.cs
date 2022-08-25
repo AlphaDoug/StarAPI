@@ -1,5 +1,4 @@
-using System.Diagnostics;
-using System.Text.RegularExpressions;
+using System;
 using IniTest.Utils;
 
 namespace StarApiTool
@@ -27,13 +26,16 @@ namespace StarApiTool
         private const string INI_COPYRES    = "INI_COPYRES";
 
         private const string INI_SECTION    = "DEFAULT";
+        private const string INI_FILE_INFO  = "FILE_INFO";
+
+        private bool isExporting = false;
         public MainForm()
         {
             InitializeComponent();
             LoadConfig();
-
         }
 
+        #region 按钮事件
         private void ChooseOriginBtn_Click(object sender, EventArgs e)
         {
             FolderBrowserDialog dialog = new FolderBrowserDialog();
@@ -50,11 +52,20 @@ namespace StarApiTool
             string pathName = dialog.SelectedPath;
             TargetFolderTxtBox.Text = pathName;
             toPath = pathName;
+            if (!Utility.CheckFolderEmpty(pathName))
+            {
+                //MessageBox.Show("目标文件夹不为空，导出操作将会清空目标文件夹！");
+            }
         }
 
         private void ExportBtn_Click(object sender, EventArgs e)
         {
             SaveConfig();
+            if (isExporting)
+            {
+                MessageBox.Show("当前正在转换中");
+                return;
+            }
             if (fromPath == string.Empty || toPath == string.Empty)
             {
                 MessageBox.Show("请选择文件夹");
@@ -65,256 +76,14 @@ namespace StarApiTool
                 MessageBox.Show("路径不存在");
                 return;
             }
-            var paths = getFiles(fromPath);
-            foreach (string path in paths)
-            {
-                if (path.EndsWith(".md"))
-                {
-                    //是MD文件，需要转化
-                    string to = path.Replace(".md", ".html");
-                    to = to.Replace(fromPath, toPath);
-                    ConvertMD2Html(path, to);
-                }
-            }
-            if (copyRes)
-            {
-                //导出Res文件夹
-                CopyFileAndDir(fromPath + @"\Resources", toPath + @"\Resources");
-            }
-            MessageBox.Show("转化完成");
+            ExportProgressBar.Value = 0;
+            ThreadStart thStart = new ThreadStart(ExportThread);//threadStart委托 
+            Thread thread = new Thread(thStart);
+            thread.Priority = ThreadPriority.Highest;
+            thread.IsBackground = true; //关闭窗体继续执行
+            thread.Start();
+
         }
-
-        private void ConvertMD2Html(string fromPath = "", string toPath = "")
-        {
-            if (!File.Exists(toPath))
-            {
-                CreateFileOrDirectory(toPath);
-                //File.Create(toPath);
-            }
-            Console.WriteLine(fromPath + toPath);
-            string s = string.Format(@"--standalone --self-contained --css {0} {1} --output {2}", cssPath, fromPath, toPath);
-            StartProcess(pandocPath, s);
-            ReplaceHtml(toPath);
-            return;
-        }
-
-       bool StartProcess(string runFilePath, string args)
-        {
-            args = args.Trim();
-            var output = "";
-            using (Process process = new Process())//创建进程对象    
-            {
-                process.StartInfo.FileName = runFilePath;  // 调用进程名
-                process.StartInfo.UseShellExecute = false;    //是否使用操作系统的shell启动
-                process.StartInfo.RedirectStandardInput = true;      //接受来自调用程序的输入
-                process.StartInfo.RedirectStandardOutput = true;     //由调用程序获取输出信息
-                process.StartInfo.CreateNoWindow = true;             //不显示调用程序的窗口 
-                process.StartInfo.RedirectStandardError = true;   //重定向标准错误输出
-                if (runFilePath != "cmd.exe")
-                {
-                    process.StartInfo.Arguments = args;
-                    process.Start(); // 后启动程序
-                }
-                else // 当直接调用cmd输入命令时传递参数的方法不一样
-                {
-                    process.Start(); // 先启动程序
-                    process.StandardInput.WriteLine(args + "&exit");
-                    process.StandardInput.AutoFlush = true;
-                }
-
-                output = process.StandardOutput.ReadToEnd(); // 这个是获取命令之后的返回值  可以不用
-                process.WaitForExit(); // 等待exe执行完成
-                //正常运行结束放回代码为0
-                if (process.ExitCode != 0)
-                {
-                    // 读取错误信息
-                    output = process.StandardError.ReadToEnd();
-                    output = output.ToString().Replace(Environment.NewLine, string.Empty);
-                    output = output.ToString().Replace("\n", string.Empty);
-                    MessageBox.Show(output);
-                    return false;
-                }
-                else
-                {
-                    output = process.StandardOutput.ReadToEnd();
-                }
-                process.Close();
-            }
-
-            return true;
-        }
-
-       void ReplaceHtml(string htmlPath)
-        {
-            Stream myStream = new FileStream(htmlPath, FileMode.Open);
-            //Encoding encode = Encoding.GetEncoding("gb2312");//若是格式为utf-8的需要将gb2312替换
-            StreamReader myStreamReader = new StreamReader(myStream);
-            string strhtml = myStreamReader.ReadToEnd();
-            string stroutput = Regex.Replace(strhtml, "<col style=\"width: (.*?)\" />", "");
-            stroutput = Regex.Replace(stroutput, @"\\", @"\");
-            myStream.Close();
-
-            myStream = new FileStream(htmlPath, FileMode.Create);
-            StreamWriter sw = new StreamWriter(myStream);
-            sw.Write(stroutput);
-            sw.Close();
-            myStream.Close();
-        }
-
-        /// <summary>
-        /// 获取最终需要的文件夹路径字符串集合
-        /// </summary>
-        /// <param name="folderName"></param>
-        /// <returns></returns>
-        private List<string> getFiles(string folderName, bool useOnlyName = false)
-        {
-            List<string> fileNameList = new List<string>() { };
-            DirectoryInfo theFolder = new DirectoryInfo(folderName);
-            DirectoryInfo[] dirInfo = theFolder.GetDirectories();
-
-            fileNameList = getFileList(dirInfo, fileNameList, useOnlyName);
-            FileInfo[] fileInfo = theFolder.GetFiles();
-            for (int i = 0; i < fileInfo.Length; i++)
-            {
-                if (useOnlyName)
-                {
-                    fileNameList.Add(fileInfo[i].Name);
-                }
-                else
-                {
-                    fileNameList.Add(fileInfo[i].FullName);
-                }
-            }
-            return fileNameList;
-        }
-
-        /// <summary>
-        /// 递归获取文件夹里的所有文件（包括子文件夹内的文件）
-        /// </summary>
-        /// <param name="dirInfos"></param>
-        /// <param name="fileNameList"></param>
-        /// <returns></returns>
-        private List<string> getFileList(DirectoryInfo[] dirInfos, List<string> fileNameList, bool useOnlyName = false)
-        {
-            foreach (DirectoryInfo sonFolder in dirInfos)
-            {
-                FileInfo[] fileInfo = sonFolder.GetFiles();
-                for (int i = 0; i < fileInfo.Length; i++)
-                {
-                    if (useOnlyName)
-                    {
-                        fileNameList.Add(fileInfo[i].Name);
-                    }
-                    else
-                    {
-                        fileNameList.Add(fileInfo[i].FullName);
-                    }
-
-                }
-                if (sonFolder.GetDirectories() != null)
-                {
-                    getFileList(sonFolder.GetDirectories(), fileNameList, useOnlyName);
-                }
-            }
-            return fileNameList;
-        }
-        public static void CreateFileOrDirectory(string path, CreateType createType = CreateType.DoNothing)
-        {
-            if (path.Contains("."))
-            {
-                FileInfo fileInfo = new FileInfo(path);
-
-                CreateFile(fileInfo, createType);
-            }
-            else
-            {
-                Directory.CreateDirectory(path);
-            }
-        }
-
-
-        public static void CreateFile(FileInfo fileInfo, CreateType createType = CreateType.DoNothing)
-        {
-            if (fileInfo.Exists)
-            {
-                switch (createType)
-                {
-                    case CreateType.Overrite:
-                        {
-                            fileInfo.Create().Close();
-                        }
-                        break;
-
-                    case CreateType.NewName:
-                        {
-                            string directoryName = fileInfo.DirectoryName;
-                            string fileName = fileInfo.Name;
-
-                            string[] fileNameAndSuffix = fileName.Split('.');
-                            string fileHead = fileNameAndSuffix[0];
-                            string suffix = fileNameAndSuffix[1];
-
-                            int i = 1;
-                            string newFilePath;
-                            do
-                            {
-                                string newFileName = $"{fileHead}_{i}.{suffix}";
-                                newFilePath = $@"{directoryName}\{newFileName}";
-
-                                i++;
-                            } while (File.Exists(newFilePath));
-
-                            File.Create(newFilePath).Close();
-                        }
-                        break;
-
-                    case CreateType.DoNothing:
-                        break;
-                }
-            }
-            else
-            {
-                Directory.CreateDirectory(fileInfo.DirectoryName);
-
-                // 创建完文件，记得关闭
-                fileInfo.Create().Close();
-            }
-        }
-
-        /// <summary>
-        /// 复制文件夹下的所有文件、目录到指定的文件夹
-        /// </summary>
-        /// <param name="dir">源文件夹地址</param>
-        /// <param name="desDir">指定的文件夹地址</param>
-        public static void CopyFileAndDir(string dir, string desDir)
-        {
-            if (!Directory.Exists(desDir))
-            {
-                Directory.CreateDirectory(desDir);
-            }
-            IEnumerable<string> files = Directory.EnumerateFileSystemEntries(dir);
-            if (files != null && files.Count() > 0)
-            {
-                foreach (var item in files)
-                {
-                    string desPath = Path.Combine(desDir, Path.GetFileName(item));
-
-                    //如果是文件
-                    var fileExist = File.Exists(item);
-                    if (fileExist)
-                    {
-                        //复制文件到指定目录下                     
-                        File.Copy(item, desPath, true);
-                        continue;
-                    }
-
-                    //如果是文件夹                   
-                    CopyFileAndDir(item, desPath);
-
-                }
-            }
-        }
-
         private void ChoosePandocBtn_Click(object sender, EventArgs e)
         {
             OpenFileDialog dialog = new OpenFileDialog();
@@ -341,6 +110,57 @@ namespace StarApiTool
             }
         }
 
+        private void IsCopyResCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            copyRes = IsCopyResCheckBox.Checked;
+        }
+        #endregion
+
+
+        private void ExportThread()
+        {
+            isExporting = true;
+            var paths = Utility.GetFiles(fromPath);
+            //Utility.ClearDirectory(toPath);
+            int fileCount = 0;
+            for (int i = 0; i < paths.Count; i++)
+            {
+                var path = paths[i];
+                if (path.EndsWith(".md"))
+                {
+                    //是MD文件，进行文件信息比对
+                    string fileInfo = GetFileInfo(path);
+                    string curFileInfo = IniHelper.Read(INI_FILE_INFO, path.Replace(fromPath + @"\", ""), "", INI_PATH);
+                    if (curFileInfo != fileInfo)
+                    {
+                        fileCount++;
+                        //文件信息发生更改，进行转换
+                        string to = path.Replace(".md", ".html");
+                        to = to.Replace(fromPath, toPath);
+                        Utility.ConvertMD2Html(path, to, pandocPath, cssPath);
+                        if (ExportProgressBar.InvokeRequired)//不同线程访问了
+                            ExportProgressBar.Invoke(new Action<ProgressBar, float>(UpdateProgress), ExportProgressBar, (float)(i + 1) / paths.Count * 100);//跨线程了
+                        else//同线程直接赋值
+                            ExportProgressBar.Value = (int)(0.0f / paths.Count * 100);
+                    }
+
+                }
+            }
+            if (copyRes)
+            {
+                //导出Res文件夹
+                Utility.CopyFileAndDir(fromPath + @"\Resources", toPath + @"\Resources");
+            }
+            SaveFileInfo();
+            MessageBox.Show("转化完成，生成文件数量：" + (fileCount == 0 ? "没有文件更改" : fileCount.ToString()));
+            isExporting = false;
+        }
+
+        void UpdateProgress(ProgressBar progressBar, float v)
+        {
+            progressBar.Value = (int)Math.Floor(v);
+        }
+
         private void SaveConfig()
         {
             IniHelper.Write(INI_SECTION, INI_FROMPATH, fromPath, INI_PATH);
@@ -348,6 +168,7 @@ namespace StarApiTool
             IniHelper.Write(INI_SECTION, INI_CSSPATH, cssPath, INI_PATH);
             IniHelper.Write(INI_SECTION, INI_PANDOCPATH, pandocPath, INI_PATH);
             IniHelper.Write(INI_SECTION, INI_COPYRES, copyRes.ToString(), INI_PATH);
+
         }
 
         private void LoadConfig()
@@ -369,11 +190,29 @@ namespace StarApiTool
             IsCopyResCheckBox.Checked = copyRes;
         }
 
-        private void IsCopyResCheckBox_CheckedChanged(object sender, EventArgs e)
+        private void OriginFolderTxtBox_TextChanged(object sender, EventArgs e)
         {
-            copyRes = IsCopyResCheckBox.Checked;
+
+        }
+
+        private void SaveFileInfo()
+        {
+            var paths = Utility.GetFiles(fromPath);
+            foreach (var path in paths)
+            {
+                if (path.EndsWith(".md"))
+                {
+                    IniHelper.Write(INI_FILE_INFO, path.Replace(fromPath + @"\", ""), GetFileInfo(path), INI_PATH);
+                }
+            }
+        }
+
+        string GetFileInfo(string filePath)
+        {
+            var file = new FileInfo(filePath);
+            long fileLength = file.Length;
+            DateTime lastWriteTime = file.LastWriteTime;
+            return fileLength.ToString() + "|" + lastWriteTime.ToString();
         }
     }
-
-
 }

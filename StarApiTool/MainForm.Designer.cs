@@ -38,6 +38,7 @@
             this.ChoosePandocBtn = new System.Windows.Forms.Button();
             this.CSSTxtBox = new System.Windows.Forms.TextBox();
             this.ChooseCssBtn = new System.Windows.Forms.Button();
+            this.ExportProgressBar = new System.Windows.Forms.ProgressBar();
             this.SuspendLayout();
             // 
             // ChooseOriginBtn
@@ -57,6 +58,7 @@
             this.OriginFolderTxtBox.ReadOnly = true;
             this.OriginFolderTxtBox.Size = new System.Drawing.Size(337, 23);
             this.OriginFolderTxtBox.TabIndex = 1;
+            this.OriginFolderTxtBox.TextChanged += new System.EventHandler(this.OriginFolderTxtBox_TextChanged);
             // 
             // TargetFolderTxtBox
             // 
@@ -78,7 +80,7 @@
             // 
             // ExportBtn
             // 
-            this.ExportBtn.Location = new System.Drawing.Point(17, 229);
+            this.ExportBtn.Location = new System.Drawing.Point(17, 261);
             this.ExportBtn.Name = "ExportBtn";
             this.ExportBtn.Size = new System.Drawing.Size(475, 60);
             this.ExportBtn.TabIndex = 4;
@@ -133,11 +135,19 @@
             this.ChooseCssBtn.UseVisualStyleBackColor = true;
             this.ChooseCssBtn.Click += new System.EventHandler(this.ChooseCssBtn_Click);
             // 
+            // ExportProgressBar
+            // 
+            this.ExportProgressBar.Location = new System.Drawing.Point(17, 225);
+            this.ExportProgressBar.Name = "ExportProgressBar";
+            this.ExportProgressBar.Size = new System.Drawing.Size(475, 23);
+            this.ExportProgressBar.TabIndex = 10;
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 17F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(510, 310);
+            this.ClientSize = new System.Drawing.Size(510, 335);
+            this.Controls.Add(this.ExportProgressBar);
             this.Controls.Add(this.CSSTxtBox);
             this.Controls.Add(this.ChooseCssBtn);
             this.Controls.Add(this.PandocTxtBox);
@@ -148,7 +158,10 @@
             this.Controls.Add(this.ChooseTargetBtn);
             this.Controls.Add(this.OriginFolderTxtBox);
             this.Controls.Add(this.ChooseOriginBtn);
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.MaximizeBox = false;
             this.Name = "MainForm";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "API转换工具";
             this.ResumeLayout(false);
             this.PerformLayout();
@@ -167,5 +180,6 @@
         private Button ChoosePandocBtn;
         private TextBox CSSTxtBox;
         private Button ChooseCssBtn;
+        private ProgressBar ExportProgressBar;
     }
 }
