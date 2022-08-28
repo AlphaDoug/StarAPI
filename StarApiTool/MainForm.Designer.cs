@@ -39,6 +39,9 @@
             this.CSSTxtBox = new System.Windows.Forms.TextBox();
             this.ChooseCssBtn = new System.Windows.Forms.Button();
             this.ExportProgressBar = new System.Windows.Forms.ProgressBar();
+            this.IsTotalExportCheckBox = new System.Windows.Forms.CheckBox();
+            this.ThreadComboBox = new System.Windows.Forms.ComboBox();
+            this.label1 = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // ChooseOriginBtn
@@ -80,7 +83,7 @@
             // 
             // ExportBtn
             // 
-            this.ExportBtn.Location = new System.Drawing.Point(17, 261);
+            this.ExportBtn.Location = new System.Drawing.Point(17, 262);
             this.ExportBtn.Name = "ExportBtn";
             this.ExportBtn.Size = new System.Drawing.Size(475, 60);
             this.ExportBtn.TabIndex = 4;
@@ -91,7 +94,7 @@
             // IsCopyResCheckBox
             // 
             this.IsCopyResCheckBox.AutoSize = true;
-            this.IsCopyResCheckBox.Location = new System.Drawing.Point(360, 202);
+            this.IsCopyResCheckBox.Location = new System.Drawing.Point(17, 206);
             this.IsCopyResCheckBox.Name = "IsCopyResCheckBox";
             this.IsCopyResCheckBox.Size = new System.Drawing.Size(132, 21);
             this.IsCopyResCheckBox.TabIndex = 5;
@@ -137,16 +140,55 @@
             // 
             // ExportProgressBar
             // 
-            this.ExportProgressBar.Location = new System.Drawing.Point(17, 225);
+            this.ExportProgressBar.Location = new System.Drawing.Point(17, 233);
             this.ExportProgressBar.Name = "ExportProgressBar";
             this.ExportProgressBar.Size = new System.Drawing.Size(475, 23);
             this.ExportProgressBar.TabIndex = 10;
+            // 
+            // IsTotalExportCheckBox
+            // 
+            this.IsTotalExportCheckBox.AutoSize = true;
+            this.IsTotalExportCheckBox.Location = new System.Drawing.Point(155, 206);
+            this.IsTotalExportCheckBox.Name = "IsTotalExportCheckBox";
+            this.IsTotalExportCheckBox.Size = new System.Drawing.Size(99, 21);
+            this.IsTotalExportCheckBox.TabIndex = 11;
+            this.IsTotalExportCheckBox.Text = "是否全部导出";
+            this.IsTotalExportCheckBox.UseVisualStyleBackColor = true;
+            this.IsTotalExportCheckBox.CheckedChanged += new System.EventHandler(this.IsTotalExportCheckBox_CheckedChanged);
+            // 
+            // ThreadComboBox
+            // 
+            this.ThreadComboBox.FormattingEnabled = true;
+            this.ThreadComboBox.Items.AddRange(new object[] {
+            "1",
+            "2",
+            "3",
+            "4",
+            "5"});
+            this.ThreadComboBox.Location = new System.Drawing.Point(453, 202);
+            this.ThreadComboBox.Name = "ThreadComboBox";
+            this.ThreadComboBox.Size = new System.Drawing.Size(39, 25);
+            this.ThreadComboBox.TabIndex = 12;
+            this.ThreadComboBox.Text = "3";
+            this.ThreadComboBox.SelectedIndexChanged += new System.EventHandler(this.ThreadComboBox_SelectedIndexChanged);
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(379, 205);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(68, 17);
+            this.label1.TabIndex = 13;
+            this.label1.Text = "多线程导出";
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 17F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(510, 335);
+            this.ClientSize = new System.Drawing.Size(510, 332);
+            this.Controls.Add(this.label1);
+            this.Controls.Add(this.ThreadComboBox);
+            this.Controls.Add(this.IsTotalExportCheckBox);
             this.Controls.Add(this.ExportProgressBar);
             this.Controls.Add(this.CSSTxtBox);
             this.Controls.Add(this.ChooseCssBtn);
@@ -181,5 +223,8 @@
         private TextBox CSSTxtBox;
         private Button ChooseCssBtn;
         private ProgressBar ExportProgressBar;
+        private CheckBox IsTotalExportCheckBox;
+        private ComboBox ThreadComboBox;
+        private Label label1;
     }
 }

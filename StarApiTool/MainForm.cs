@@ -9,6 +9,17 @@ namespace StarApiTool
         NewName,
         DoNothing,
     }
+
+    public struct ThreadParam
+    {
+        public List<string> paths;
+        public int totalPathsNum;
+        public ThreadParam(List<string> _paths, int _total)
+        {
+            paths = _paths;
+            totalPathsNum = _total;
+        }
+    }
     
     public partial class MainForm : Form
     {
@@ -17,18 +28,37 @@ namespace StarApiTool
         private string pandocPath = string.Empty;
         private string cssPath = string.Empty;
         private bool copyRes = false;
+        private bool isTotalExport = false;
+        private int maxThreadNum = 3;
 
-        private string INI_PATH             = Directory.GetCurrentDirectory() + "\\config.ini";
-        private const string INI_FROMPATH   = "INI_FROMPATH";
-        private const string INI_TOPATH     = "INI_TOPATH";
-        private const string INI_PANDOCPATH = "INI_PANDOCPATH";
-        private const string INI_CSSPATH    = "INI_CSSPATH";
-        private const string INI_COPYRES    = "INI_COPYRES";
+        private string INI_PATH                 = Directory.GetCurrentDirectory() + "\\config.ini";
+        private const string INI_FROMPATH       = "INI_FROMPATH";
+        private const string INI_TOPATH         = "INI_TOPATH";
+        private const string INI_PANDOCPATH     = "INI_PANDOCPATH";
+        private const string INI_CSSPATH        = "INI_CSSPATH";
+        private const string INI_COPYRES        = "INI_COPYRES";
+        private const string INI_TOTALEXPORT    = "INI_TOTALEXPORT";
+        private const string INI_MAXTHREADNUM   = "INI_MAXTHREADNUM";
 
         private const string INI_SECTION    = "DEFAULT";
         private const string INI_FILE_INFO  = "FILE_INFO";
 
-        private bool isExporting = false;
+
+        /// <summary>
+        /// 当前运行的线程数量
+        /// </summary>
+        private int curThreadNum = 0;
+        /// <summary>
+        /// 导出的文件数量
+        /// </summary>
+        private int exportFileCount = 0;
+        /// <summary>
+        /// 已经处理的文件数量
+        /// </summary>
+        private int curOperatedFile = 0;
+
+        private long startSec = 0;
+        private long endSec = 0;
         public MainForm()
         {
             InitializeComponent();
@@ -61,7 +91,7 @@ namespace StarApiTool
         private void ExportBtn_Click(object sender, EventArgs e)
         {
             SaveConfig();
-            if (isExporting)
+            if (curThreadNum > 0)
             {
                 MessageBox.Show("当前正在转换中");
                 return;
@@ -77,11 +107,17 @@ namespace StarApiTool
                 return;
             }
             ExportProgressBar.Value = 0;
-            ThreadStart thStart = new ThreadStart(ExportThread);//threadStart委托 
-            Thread thread = new Thread(thStart);
-            thread.Priority = ThreadPriority.Highest;
-            thread.IsBackground = true; //关闭窗体继续执行
-            thread.Start();
+            var fromPaths = Utility.GetFiles(fromPath);
+            var splitList = Utility.SpiltList(fromPaths, maxThreadNum);
+            startSec = DateTimeOffset.Now.ToUnixTimeSeconds();
+            for (int i = 0; i < splitList.Count; i++)
+            {
+                ParameterizedThreadStart thStart = new ParameterizedThreadStart(ExportThread);//threadStart委托 
+                Thread thread = new Thread(thStart);
+                thread.Priority = ThreadPriority.Highest;
+                thread.IsBackground = true; //关闭窗体继续执行
+                thread.Start(new ThreadParam(splitList[i], fromPaths.Count));           
+            }
 
         }
         private void ChoosePandocBtn_Click(object sender, EventArgs e)
@@ -114,46 +150,70 @@ namespace StarApiTool
         {
             copyRes = IsCopyResCheckBox.Checked;
         }
+
+        private void IsTotalExportCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            isTotalExport = IsTotalExportCheckBox.Checked;
+        }
+
+        private void ThreadComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            maxThreadNum = int.Parse(ThreadComboBox.Text);
+        }
         #endregion
 
 
-        private void ExportThread()
+        private void ExportThread(object _pathStruct)
         {
-            isExporting = true;
-            var paths = Utility.GetFiles(fromPath);
+            if (_pathStruct == null)
+            {
+                return;
+            }
+            curThreadNum += 1;
+            var pathStruct = (ThreadParam)_pathStruct;//Utility.GetFiles(fromPath);
+            var paths = pathStruct.paths;
+            var totalCount = pathStruct.totalPathsNum;
             //Utility.ClearDirectory(toPath);
-            int fileCount = 0;
             for (int i = 0; i < paths.Count; i++)
             {
                 var path = paths[i];
+                curOperatedFile += 1;
                 if (path.EndsWith(".md"))
                 {
                     //是MD文件，进行文件信息比对
                     string fileInfo = GetFileInfo(path);
                     string curFileInfo = IniHelper.Read(INI_FILE_INFO, path.Replace(fromPath + @"\", ""), "", INI_PATH);
-                    if (curFileInfo != fileInfo)
+                    if (isTotalExport || curFileInfo != fileInfo && !isTotalExport)
                     {
-                        fileCount++;
-                        //文件信息发生更改，进行转换
+                        exportFileCount++;
+                        //文件信息发生更改或者强制导出时候，进行转换
                         string to = path.Replace(".md", ".html");
                         to = to.Replace(fromPath, toPath);
                         Utility.ConvertMD2Html(path, to, pandocPath, cssPath);
+                        
                         if (ExportProgressBar.InvokeRequired)//不同线程访问了
-                            ExportProgressBar.Invoke(new Action<ProgressBar, float>(UpdateProgress), ExportProgressBar, (float)(i + 1) / paths.Count * 100);//跨线程了
+                            ExportProgressBar.Invoke(new Action<ProgressBar, float>(UpdateProgress), ExportProgressBar, (float)curOperatedFile / totalCount * 100);//跨线程了
                         else//同线程直接赋值
-                            ExportProgressBar.Value = (int)(0.0f / paths.Count * 100);
+                            ExportProgressBar.Value = (int)Math.Floor((float)curOperatedFile / totalCount * 100);
                     }
 
                 }
             }
-            if (copyRes)
+            curThreadNum -= 1;
+            if (curThreadNum <= 0)
             {
-                //导出Res文件夹
-                Utility.CopyFileAndDir(fromPath + @"\Resources", toPath + @"\Resources");
+                curThreadNum = 0;
+                if (copyRes)
+                {
+                    //导出Res文件夹
+                    Utility.CopyFileAndDir(fromPath + @"\Resources", toPath + @"\Resources");
+                }
+                SaveFileInfo();
+                endSec = DateTimeOffset.Now.ToUnixTimeSeconds();
+                MessageBox.Show("转化完成，生成文件数量：" + (exportFileCount == 0 ? "没有文件更改" : exportFileCount.ToString()) + "，用时：" + (endSec - startSec).ToString() + "秒");
+                exportFileCount = 0;
+                curOperatedFile = 0;
             }
-            SaveFileInfo();
-            MessageBox.Show("转化完成，生成文件数量：" + (fileCount == 0 ? "没有文件更改" : fileCount.ToString()));
-            isExporting = false;
         }
 
         void UpdateProgress(ProgressBar progressBar, float v)
@@ -168,7 +228,8 @@ namespace StarApiTool
             IniHelper.Write(INI_SECTION, INI_CSSPATH, cssPath, INI_PATH);
             IniHelper.Write(INI_SECTION, INI_PANDOCPATH, pandocPath, INI_PATH);
             IniHelper.Write(INI_SECTION, INI_COPYRES, copyRes.ToString(), INI_PATH);
-
+            IniHelper.Write(INI_SECTION, INI_TOTALEXPORT, isTotalExport.ToString(), INI_PATH);
+            IniHelper.Write(INI_SECTION, INI_MAXTHREADNUM, maxThreadNum.ToString(), INI_PATH);
         }
 
         private void LoadConfig()
@@ -182,12 +243,16 @@ namespace StarApiTool
             pandocPath = IniHelper.Read(INI_SECTION, INI_PANDOCPATH, "", INI_PATH);
             cssPath = IniHelper.Read(INI_SECTION, INI_CSSPATH, "", INI_PATH);
             copyRes = bool.Parse(IniHelper.Read(INI_SECTION, INI_COPYRES, "False", INI_PATH));
+            isTotalExport = bool.Parse(IniHelper.Read(INI_SECTION, INI_TOTALEXPORT, "False", INI_PATH));
+            maxThreadNum = int.Parse(IniHelper.Read(INI_SECTION, INI_MAXTHREADNUM, "3", INI_PATH));
 
             OriginFolderTxtBox.Text = fromPath;
             TargetFolderTxtBox.Text = toPath;
             PandocTxtBox.Text = pandocPath;
             CSSTxtBox.Text = cssPath;
             IsCopyResCheckBox.Checked = copyRes;
+            IsTotalExportCheckBox.Checked = isTotalExport;
+            ThreadComboBox.Text = maxThreadNum.ToString();
         }
 
         private void OriginFolderTxtBox_TextChanged(object sender, EventArgs e)
@@ -214,5 +279,6 @@ namespace StarApiTool
             DateTime lastWriteTime = file.LastWriteTime;
             return fileLength.ToString() + "|" + lastWriteTime.ToString();
         }
+
     }
 }
