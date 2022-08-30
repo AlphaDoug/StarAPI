@@ -82,7 +82,7 @@ namespace StarApiTool
             string pathName = dialog.SelectedPath;
             TargetFolderTxtBox.Text = pathName;
             toPath = pathName;
-            if (!Utility.CheckFolderEmpty(pathName))
+            if (pathName != string.Empty && !Utility.CheckFolderEmpty(pathName))
             {
                 //MessageBox.Show("目标文件夹不为空，导出操作将会清空目标文件夹！");
             }

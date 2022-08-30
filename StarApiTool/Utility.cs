@@ -128,6 +128,9 @@ namespace StarApiTool
             stroutput = stroutput.Replace(@"\\", @"\");
             stroutput = stroutput.Replace(@".md)", @".html)");
             stroutput = stroutput.Replace(@".md]", @"]");
+            stroutput = stroutput.Replace("\"....\\", "\"..\\..\\");
+            stroutput = stroutput.Replace("\".......\\", "\"..\\..\\..\\");
+
             myStream.Close();
 
             myStream = new FileStream(htmlPath, FileMode.Create);
